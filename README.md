@@ -24,6 +24,8 @@ A feature-rich statusline for [Claude Code](https://docs.anthropic.com/en/docs/c
 
 Everything hides gracefully when not applicable — no stashes, no stash indicator. No agents running, no agent count. Clean and minimal by default.
 
+**Narrow terminal?** The statusline automatically adapts to your terminal width. Lower-priority segments are progressively dropped while the context window bar is always preserved on the right.
+
 ## Install
 
 **One-liner:**
