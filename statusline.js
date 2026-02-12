@@ -165,6 +165,7 @@ process.stdin.on('end', () => {
     }
 
     // Context window — gradient bar
+    let contextPart = '';
     if (remaining != null) {
       const rawUsed = Math.max(0, Math.min(100, 100 - Math.round(remaining)));
       const used = Math.min(100, Math.round((rawUsed / 80) * 100));
@@ -197,9 +198,39 @@ process.stdin.on('end', () => {
         label = `${c.blink}${c.red}${used}% 💀${c.reset}`;
       }
 
-      parts.push(`${bar} ${label}`);
+      contextPart = `${bar} ${label}`;
     }
 
-    process.stdout.write(parts.join(sep));
+    // Strip ANSI codes to measure visible width
+    const visLen = (s) => s.replace(/\x1b\[[0-9;]*m/g, '').length;
+
+    const cols = process.stdout.columns || 120;
+    const sepVis = 3; // " · "
+
+    // Build output that fits terminal width.
+    // Context bar is always kept on the right; left parts are trimmed as needed.
+    const contextVis = visLen(contextPart);
+    const rightReserve = contextPart ? contextVis + sepVis : 0;
+    const maxLeft = cols - rightReserve;
+
+    // Progressively add left parts, dropping from the end if too wide
+    let leftStr = '';
+    let leftVis = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const partVis = visLen(parts[i]);
+      const addedVis = i === 0 ? partVis : sepVis + partVis;
+      if (leftVis + addedVis > maxLeft) break;
+      leftStr += (i === 0 ? '' : sep) + parts[i];
+      leftVis += addedVis;
+    }
+
+    // If even the first part doesn't fit, just truncate
+    if (!leftStr && parts.length > 0) {
+      leftStr = parts[0];
+      leftVis = visLen(parts[0]);
+    }
+
+    const output = contextPart ? leftStr + sep + contextPart : leftStr;
+    process.stdout.write(output);
   } catch (e) {}
 });
